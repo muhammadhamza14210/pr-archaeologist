@@ -1,7 +1,7 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
+EXTRACTOR_VERSION = "v1"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",

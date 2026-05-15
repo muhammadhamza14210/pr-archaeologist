@@ -28,10 +28,10 @@ def _migration_files() -> list[tuple[int, Path]]:
 
 def _create_vec_table(conn: sqlite3.Connection) -> None:
     conn.execute(
-        f"""
-        CREATE VIRTUAL TABLE IF NOT EXISTS decision_vec USING vec0(
+        """
+        CREATE TABLE IF NOT EXISTS decision_vec (
             decision_id INTEGER PRIMARY KEY,
-            embedding FLOAT[{EMBED_DIM}]
+            embedding BLOB NOT NULL
         )
         """
     )
