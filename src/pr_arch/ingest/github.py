@@ -9,6 +9,7 @@ We use the REST API rather than GraphQL because the pagination model is
 simpler and the per-PR payload already has what we need for v1.
 """
 
+import os
 import time
 from typing import Any, Iterator
 
@@ -85,7 +86,8 @@ def fetch_pulls(
         "per_page": PER_PAGE,
     }
 
-    with httpx.Client(headers=_headers(token), timeout=30.0) as client:
+    ssl_verify = os.environ.get("GITHUB_SSL_VERIFY", "1").lower() not in ("0", "false", "no")
+    with httpx.Client(headers=_headers(token), timeout=30.0, verify=ssl_verify) as client:
         next_url: str | None = url
         next_params: dict[str, Any] | None = params
         while next_url:
@@ -96,4 +98,4 @@ def fetch_pulls(
                 yield pr
             # GitHub returns the next page via Link header.
             next_url = resp.links.get("next", {}).get("url")
-            next_params = None  # the next link already has params baked in
+            next_params = None  

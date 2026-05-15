@@ -6,6 +6,7 @@ from pr_arch.db.connection import connect, vec_version
 from pr_arch.index.schema import migrate
 from pr_arch.agent.loop import answer_question
 from pr_arch.llm.anthropic import AnthropicClient
+from pr_arch.ingest.runner import ingest_repo
 
 app = typer.Typer(
     name="pr-arch",
@@ -90,6 +91,32 @@ def ask(question: str) -> None:
 
     console.print()
     console.print(result)
+
+@app.command()
+def index(repo: str) -> None:
+    """Fetch PRs from a GitHub repo and store them locally.
+
+    REPO is "owner/name" (e.g. astral-sh/ruff).
+    """
+    settings = load_settings()
+    if not settings.github_token:
+        console.print(
+            "[yellow]GITHUB_TOKEN is not set. Unauthenticated requests are "
+            "rate-limited to 60/hour and will likely fail on any real repo.[/yellow]"
+        )
+
+    conn = connect(settings.db_path)
+    try:
+        console.print(f"[bold]indexing[/bold] {repo}")
+        counts = ingest_repo(conn, settings.raw_dir, repo, settings.github_token, console)
+    finally:
+        conn.close()
+
+    console.print(
+        f"[green]done.[/green] fetched {counts['fetched']}, "
+        f"new {counts['inserted']}"
+    )
+
 
 if __name__ == "__main__":
     app()
