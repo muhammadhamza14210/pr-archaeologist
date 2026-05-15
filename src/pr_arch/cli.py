@@ -4,6 +4,8 @@ from pr_arch import __version__
 from pr_arch.config import load_settings
 from pr_arch.db.connection import connect, vec_version
 from pr_arch.index.schema import migrate
+from pr_arch.agent.loop import answer_question
+from pr_arch.llm.anthropic import AnthropicClient
 
 app = typer.Typer(
     name="pr-arch",
@@ -69,6 +71,25 @@ def init() -> None:
     else:
         console.print("[green]Schema already up to date.[/green]")
     console.print(f"  db: {settings.db_path}")
+
+@app.command()
+def ask(question: str) -> None:
+    """Ask a question about the repository's decision history."""
+    settings = load_settings()
+    if not settings.anthropic_api_key:
+        console.print("[red]ANTHROPIC_API_KEY is not set. Add it to .env.[/red]")
+        raise typer.Exit(code=1)
+
+    llm = AnthropicClient(settings.anthropic_api_key)
+    conn = connect(settings.db_path)
+    try:
+        console.print("[dim]thinking…[/dim]")
+        result = answer_question(llm, conn, question, console)
+    finally:
+        conn.close()
+
+    console.print()
+    console.print(result)
 
 if __name__ == "__main__":
     app()
